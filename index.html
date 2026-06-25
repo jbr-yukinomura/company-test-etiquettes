@@ -195,21 +195,39 @@
         return array;
     }
 
+    // 🎯 10問版専用：カテゴリが4つの抽出ロジック
     function generateQuizSet() {
         if (allMasterQuestions.length === 0) return;
+        
         const shuffledPool = shuffleArray([...allMasterQuestions]);
         const selectedList = [];
         const usedCategories = new Set();
+
+        // 【第1波】まずはカテゴリが被らないように、各カテゴリから1問ずつ最優先で選ぶ（4つのカテゴリが埋まる）
         for (let i = 0; i < shuffledPool.length; i++) {
             const q = shuffledPool[i];
             const cat = q.category || "未分類";
+
             if (!usedCategories.has(cat)) {
                 selectedList.push(q);
                 usedCategories.add(cat); 
             }
             if (selectedList.length === 10) break;
         }
-        currentQuizQuestions = shuffleArray(selectedList);
+
+        // 【第2波】4つしかなくて残りの6枠が足りない場合、まだ選ばれていない問題をプールから順に詰める
+        if (selectedList.length < 10) {
+            for (let j = 0; j < shuffledPool.length; j++) {
+                const remainingQ = shuffledPool[j];
+                // すでに選ばれている問題は重複しないようにチェック
+                if (!selectedList.some(item => item.id === remainingQ.id)) {
+                    selectedList.push(remainingQ);
+                }
+                if (selectedList.length === 10) break;
+            }
+        }
+        
+        currentQuizQuestions = shuffleArray(selectedList); // 10問をランダムに並び替えてセット完了！
     }
 
     function startQuiz() {
