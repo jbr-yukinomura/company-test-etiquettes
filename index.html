@@ -447,13 +447,19 @@
             tr.innerHTML = `<td>${log.timestamp}</td><td>${log.company}</td><td>${log.name}</td><td>${log.score}</td>`;
             
             // ① 左側：4カテゴリの得点セルを追加
+            // ① 左側：4カテゴリの得点セルを追加
             categories.forEach(cat => {
                 const td = document.createElement('td');
                 const stat = rowCatCounter[cat];
                 if (stat && stat.total > 0) {
                     td.innerText = `${stat.correct} / ${stat.total}`;
-                    if (stat.correct === stat.total) td.className = 'score-perfect';
-                    else if (stat.correct === 0) td.className = 'score-warn';
+                    
+                    // 全問正解で緑、不正解が含まれる場合赤
+                    if (stat.correct === stat.total) {
+                        td.className = 'score-perfect'; // 正解数＝出題数なら「緑（〇の色）」
+                    } else {
+                        td.className = 'score-warn';    // 1問でも間違えたら（正解数＜出題数）すべて「赤（×の色）」
+                    }
                 } else {
                     td.innerText = '0 / 0';
                     td.style.color = '#ccc';
