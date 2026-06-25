@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; line-height: 1.6; }
-        .container { max-width: 1300px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .container { max-width: 1500px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; border-bottom: 2px solid #3498db; padding-bottom: 10px; font-size: 20px; position: relative; }
         .admin-link { position: absolute; right: 0; top: -10px; font-size: 12px; color: #bdc3c7; cursor: pointer; text-decoration: none; user-select: none; }
         .info-section { background: #fafafa; border: 1px solid #e0e0e0; padding: 20px; border-radius: 6px; margin-bottom: 25px; font-size: 14px; }
@@ -29,7 +29,7 @@
         .score { font-size: 24px; font-weight: bold; color: #e74c3c; margin: 10px 0; }
         .correct { border: 2px solid #2ecc71; background: #eafaf1; }
         .incorrect { border: 2px solid #e74c3c; background: #fdedec; }
-        .judge-badge { inline-block; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: white; margin-bottom: 10px; }
+        .judge-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: bold; color: white; margin-bottom: 10px; }
         .badge-ok { background: #2ecc71; }
         .badge-ng { background: #e74c3c; }
         .commentary-box { margin-top: 15px; padding: 12px; background: #fffde7; border-left: 4px solid #f1c40f; font-size: 13px; line-height: 1.5; }
@@ -47,12 +47,19 @@
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
         .card { background: #fafafa; border: 1px solid #ddd; padding: 20px; border-radius: 6px; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 11px; }
-        th, td { border: 1px solid #ddd; padding: 8px 4px; text-align: center; white-space: nowrap; }
+        th, td { border: 1px solid #ddd; padding: 6px 4px; text-align: center; white-space: nowrap; }
         th { background-color: #f2f2f2; font-size: 11px; font-weight: bold; color: #2c3e50; }
         tr:hover { background-color: #f5f5f5; }
         .text-center { text-align: center; }
-        .log-ok { color: #2ecc71; font-weight: bold; }
-        .log-ng { color: #e74c3c; font-weight: bold; }
+        .score-perfect { color: #2ecc71; font-weight: bold; }
+        .score-warn { color: #e74c3c; font-weight: bold; }
+        .cell-ok { background-color: #f4fbf7; line-height: 1.2; }
+        .cell-ng { background-color: #fff5f5; line-height: 1.2; }
+        .q-num { font-size: 10px; color: #7f8c8d; font-weight: bold; display: block; }
+        .q-status { font-size: 13px; font-weight: bold; }
+        .status-ok { color: #2ecc71; }
+        .status-ng { color: #e74c3c; }
+        .th-q { background-color: #ebf5fb; color: #2980b9; width: 45px; }
     </style>
 </head>
 <body>
@@ -63,7 +70,6 @@
         <span class="admin-link" onclick="openAdminModal()">⚙️管理者モード</span>
     </h1>
     
-    <!-- 📋 画面1：案内 ＆ 個人情報入力（大復活！） -->
     <div id="startScreen">
         <div class="info-section">
             <p><strong>【受験者への案内】</strong></p>
@@ -115,7 +121,6 @@
         <button type="button" class="btn-action" onclick="startQuiz()">テストを開始する</button>
     </div>
 
-    <!-- 📝 画面2：クイズ本編 -->
     <div id="quizScreen" style="display: none;">
         <form id="quizForm">
             <div id="quizResultHeader"></div>
@@ -125,9 +130,8 @@
         </form>
     </div>
 
-    <!-- 📊 画面3：管理者ダッシュボード -->
     <div id="adminDashboard" class="admin-dashboard">
-        <h2>📊 JBR理解度テスト 管理者ダッシュボード</h2>
+        <h2>📊 JBR理解度テスト 管理者ダッシュボード（10問マナー編）</h2>
         <div class="tab-menu">
             <button class="tab-btn active" onclick="switchTab('tabOverall')">📊 全体分析</button>
             <button class="tab-btn" onclick="switchTab('tabIndividual')">👤 受講者一覧・傾向分析</button>
@@ -174,11 +178,11 @@
     let allMasterQuestions = []; 
     let currentQuizQuestions = []; 
     
-    // 💡 設定
+    // 💡 10問版の設定
     const ADMIN_PASSWORD = "jbr2453"; 
-    const REPO_PATH = "jbr-yukinomura/company-test-etiquettes";
+    const REPO_PATH = "jbr-yukinomura/company-test-etiquettes"; 
 
-    // 🔒 トークンの貼り付け
+    // 🔒 トークン
     const TOKEN_PART1 = "ghp_seAvsPGZIxQxaLz6Hc"; 
     const TOKEN_PART2 = "Qgew3o1I3BH93kB9kk";    
 
@@ -195,19 +199,15 @@
         return array;
     }
 
-    // 🎯 10問版専用：カテゴリが4つの抽出ロジック
     function generateQuizSet() {
         if (allMasterQuestions.length === 0) return;
-        
         const shuffledPool = shuffleArray([...allMasterQuestions]);
         const selectedList = [];
         const usedCategories = new Set();
 
-        // 【第1波】まずはカテゴリが被らないように、各カテゴリから1問ずつ最優先で選ぶ（4つのカテゴリが埋まる）
         for (let i = 0; i < shuffledPool.length; i++) {
             const q = shuffledPool[i];
             const cat = q.category || "未分類";
-
             if (!usedCategories.has(cat)) {
                 selectedList.push(q);
                 usedCategories.add(cat); 
@@ -215,19 +215,16 @@
             if (selectedList.length === 10) break;
         }
 
-        // 【第2波】4つしかなくて残りの6枠が足りない場合、まだ選ばれていない問題をプールから順に詰める
         if (selectedList.length < 10) {
             for (let j = 0; j < shuffledPool.length; j++) {
                 const remainingQ = shuffledPool[j];
-                // すでに選ばれている問題は重複しないようにチェック
                 if (!selectedList.some(item => item.id === remainingQ.id)) {
                     selectedList.push(remainingQ);
                 }
                 if (selectedList.length === 10) break;
             }
         }
-        
-        currentQuizQuestions = shuffleArray(selectedList); // 10問をランダムに並び替えてセット完了！
+        currentQuizQuestions = shuffleArray(selectedList);
     }
 
     function startQuiz() {
@@ -277,14 +274,17 @@
         let score = 0;
         document.getElementById('mainTitle').innerText = '理解度テスト 結果・解説';
         document.getElementById('submitBtn').style.display = 'none';
-        const resultMapping = {};
+        
+        const finalResultsArray = [];
         currentQuizQuestions.forEach((q, index) => {
             const quizBox = document.getElementById(`box_${index}`);
             const selected = document.querySelector(`input[name="question_${index}"]:checked`);
             const userAnswer = selected ? selected.value : "未回答";
             const isCorrect = (userAnswer === q.correctAnswer);
             if (isCorrect) score++;
-            resultMapping[q.id] = isCorrect ? '〇' : '×';
+            
+            finalResultsArray.push(`${q.id}:${isCorrect ? '〇' : '×'}`);
+            
             quizBox.className = `quiz-box ${isCorrect ? 'correct' : 'incorrect'}`;
             const resultDiv = document.createElement('div');
             resultDiv.className = 'result-detail-box';
@@ -297,12 +297,6 @@
             `;
             quizBox.appendChild(resultDiv);
         });
-
-        const finalResultsArray = [];
-        for (let i = 1; i <= 54; i++) {
-            const key = "Q" + i;
-            finalResultsArray.push(`${key}:${resultMapping[key] || '-'}`);
-        }
 
         const logPayload = {
             timestamp: new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }),
@@ -380,16 +374,24 @@
 
         const headerRow = document.getElementById('tableHeaderRow');
         headerRow.innerHTML = '<th>日時</th><th>会社名</th><th>氏名</th><th>得点</th>';
+        
         categories.forEach(cat => {
             const th = document.createElement('th');
             th.innerText = cat;
             headerRow.appendChild(th);
         });
+        
+        for (let m = 1; m <= 10; m++) {
+            const thQ = document.createElement('th');
+            thQ.innerText = `10問中\n${m}問目`;
+            thQ.className = 'th-q';
+            headerRow.appendChild(thQ);
+        }
 
         const tbody = document.getElementById('logTableBody');
         tbody.innerHTML = '';
         if(logs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="${4 + categories.length}">回答ログはありません。</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${4 + categories.length + 10}">回答ログはありません。</td></tr>`;
             return;
         }
 
@@ -398,14 +400,17 @@
         allMasterQuestions.forEach(q => { questionWrongMap[q.id] = { title: q.title, count: 0 }; });
 
         logs.forEach(log => {
-            const rowDataMap = {};
+            const rowCatCounter = {};
+            categories.forEach(cat => { rowCatCounter[cat] = { correct: 0, total: 0 }; });
+
             const pairs = log.results.split(',');
-            
+            const qCellList = []; 
+
             pairs.forEach(pair => {
                 const parts = pair.split(':');
                 if(parts.length !== 2) return;
-                const qIdStr = parts[0];
-                const status = parts[1]; 
+                const qIdStr = parts[0].trim();
+                const status = parts[1].trim(); 
                 
                 if (status === '-') return;
                 const isCorrect = (status === '〇');
@@ -413,7 +418,13 @@
                 const targetQ = allMasterQuestions.find(m => String(m.id) === qIdStr);
                 if(targetQ) {
                     const displayCategory = targetQ.category || '未分類';
-                    rowDataMap[displayCategory] = `${qIdStr}:${status}`;
+                    
+                    if (rowCatCounter[displayCategory]) {
+                        rowCatCounter[displayCategory].total++;
+                        if (isCorrect) rowCatCounter[displayCategory].correct++;
+                    }
+
+                    qCellList.push({ idText: qIdStr, statusText: status, isCorrect: isCorrect });
 
                     if (!categoryStats[displayCategory]) categoryStats[displayCategory] = { correct: 0, total: 0 };
                     categoryStats[displayCategory].total++;
@@ -430,16 +441,29 @@
             
             categories.forEach(cat => {
                 const td = document.createElement('td');
-                if (rowDataMap[cat]) {
-                    td.innerText = rowDataMap[cat]; 
-                    if (rowDataMap[cat].includes('〇')) td.className = 'log-ok';
-                    if (rowDataMap[cat].includes('×')) td.className = 'log-ng';
+                const stat = rowCatCounter[cat];
+                if (stat && stat.total > 0) {
+                    td.innerText = `${stat.correct} / ${stat.total}`;
+                    if (stat.correct === stat.total) td.className = 'score-perfect';
+                    else if (stat.correct === 0) td.className = 'score-warn';
                 } else {
-                    td.innerText = '-';
+                    td.innerText = '0 / 0';
                     td.style.color = '#ccc';
                 }
                 tr.appendChild(td);
             });
+
+            for (let k = 0; k < 10; k++) {
+                const tdQ = document.createElement('td');
+                if (qCellList[k]) {
+                    tdQ.innerHTML = `<span class="q-num">${qCellList[k].idText}</span><span class="q-status ${qCellList[k].isCorrect ? 'status-ok' : 'status-ng'}">${qCellList[k].statusText}</span>`;
+                    tdQ.className = qCellList[k].isCorrect ? 'cell-ok' : 'cell-ng';
+                } else {
+                    tdQ.innerText = '-';
+                    tdQ.style.color = '#ccc';
+                }
+                tr.appendChild(tdQ);
+            }
             tbody.appendChild(tr);
         });
 
